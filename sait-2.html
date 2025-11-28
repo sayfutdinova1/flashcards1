@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards</title>
+    <style>
+        :root {
+            --bg-color: #f5f5f5;
+            --card-bg: white;
+            --text-color: #333;
+            --border-color: #d1d1d6;
+            --button-bg: white;
+            --button-hover: #f8f8f8;
+            --know-color: #34C759;
+            --know-hover: #30A14E;
+            --dont-know-color: #FF3B30;
+            --dont-know-hover: #D70015;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .dark-theme {
+            --bg-color: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --text-color: #e0e0e0;
+            --border-color: #444;
+            --button-bg: #3d3d3d;
+            --button-hover: #4d4d4d;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            padding: 20px;
+            color: var(--text-color);
+            line-height: 1.5;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-right: 290px;
+        }
+        
+        .title-section {
+            display: flex;
+            align-items: center;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 12px;
+        }
+        
+        button {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+        }
+        
+        .header-buttons button {
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+        
+        .add-card:hover, .export:hover, .show-answer:hover, .theme-toggle:hover {
+            background-color: var(--button-hover);
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .flashcard-container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+            text-align: center;
+            width: 300px;
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            perspective: 1000px;
+        }
+        
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+        }
+        
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+        
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .flashcard-back {
+            transform: rotateY(180deg);
+        }
+        
+        .flashcard-term {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        
+        .flashcard-definition {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        
+        .show-answer {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 15px;
+            width: 180px;
+        }
+        
+        .feedback-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .know {
+            background-color: var(--know-color);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            width: 90px;
+            border: none;
+        }
+        
+        .know:hover {
+            background-color: var(--know-hover);
+        }
+        
+        .dont-know {
+            background-color: var(--dont-know-color);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            width: 90px;
+            border: none;
+        }
+        
+        .dont-know:hover {
+            background-color: var(--dont-know-hover);
+        }
+        
+        .sidebar {
+            flex: 1;
+            max-width: 300px;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            margin-bottom: 15px;
+        }
+        
+        .search-box:focus {
+            outline: none;
+            border-color: #007AFF;
+        }
+        
+        .stats-container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .stats-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+        }
+        
+        .tags-container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 15px;
+        }
+        
+        .tags-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .tag {
+            background-color: var(--button-bg);
+            padding: 5px 10px;
+            border-radius: 16px;
+            font-size: 13px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+        
+        .tag:hover {
+            background-color: var(--button-hover);
+        }
+        
+        .tag.selected {
+            background-color: #007AFF;
+            color: white;
+            border-color: #007AFF;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            width: 400px;
+            box-shadow: var(--shadow);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #007AFF;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .cancel-button {
+            padding: 8px 16px;
+            background-color: var(--button-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .save-button {
+            padding: 8px 16px;
+            background-color: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .theme-toggle {
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            background-color: var(--button-bg);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .import-export-container {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title-section">
+            <h1>Flashcards</h1>
+            <div class="buttons header-buttons">
+                <button class="add-card">Add Card</button>
+                <div class="import-export-container">
+                    <button class="export">Export</button>
+                    <button class="import">Import</button>
+                </div>
+                <button class="theme-toggle" title="Переключить тему">🌓</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="flashcard-container">
+            <div class="flashcard">
+                <div class="flashcard-front">
+                    <div class="flashcard-term">Инкапсуляция</div>
+                    <button class="show-answer">Показать ответ</button>
+                    <div class="feedback-buttons">
+                        <button class="know">Знаю</button>
+                        <button class="dont-know">Не знаю</button>
+                    </div>
+                </div>
+                <div class="flashcard-back">
+                    <div class="flashcard-definition">Сокрытие деталей реализации и предоставление только необходимого интерфейса для взаимодействия с объектом.</div>
+                    <button class="show-question">Показать вопрос</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="sidebar">
+            <input type="text" class="search-box" placeholder="Поиск...">
+            
+            <div class="stats-container">
+                <div class="stats-title">Статистика</div>
+                <div class="stats">
+                    <div class="stat-item">Всего: <span id="total-cards">0</span></div>
+                    <div class="stat-item">Выучено: <span id="learned-cards">0</span></div>
+                    <div class="stat-item">Прогресс: <span id="progress">0</span>%</div>
+                </div>
+            </div>
+            
+            <div class="tags-container">
+                <div class="tags-title">Теги</div>
+                <div class="tags" id="tags-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="card-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modal-title">Добавить карточку</div>
+                <button class="close-button">&times;</button>
+            </div>
+            <form id="card-form">
+                <div class="form-group">
+                    <label for="card-term">Термин</label>
+                    <input type="text" id="card-term" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="card-definition">Определение</label>
+                    <textarea id="card-definition" class="form-control" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="card-tags">Теги (через запятую)</label>
+                    <input type="text" id="card-tags" class="form-control">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-button">Отмена</button>
+                    <button type="submit" class="save-button">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="import-export-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="ie-modal-title">Экспорт данных</div>
+                <button class="close-button">&times;</button>
+            </div>
+            <div id="export-content">
+                <p>Скопируйте данные для экспорта:</p>
+                <textarea id="export-data" class="form-control" rows="8" readonly></textarea>
+            </div>
+            <div id="import-content" style="display: none;">
+                <p>Вставьте данные для импорта:</p>
+                <textarea id="import-data" class="form-control" rows="8"></textarea>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-button">Отмена</button>
+                    <button type="button" id="import-button" class="save-button">Импортировать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            version: 1,
+            cards: [],
+            currentCardIndex: 0,
+            selectedTags: [],
+            darkTheme: false
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            render();
+            setupEventListeners();
+            updateStats();
+            playSound('start');
+        });
+
+        function loadData() {
+            const savedData = localStorage.getItem('flashcards-data');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                state.cards = data.cards || [];
+                state.darkTheme = data.darkTheme || false;
+                
+                if (state.darkTheme) {
+                    document.body.classList.add('dark-theme');
+                }
+            } else {
+                loadDemoData();
+            }
+        }
+
+        function loadDemoData() {
+            state.cards = [
+                {
+                    id: generateId(),
+                    front: 'Инкапсуляция',
+                    back: 'Сокрытие деталей реализации и предоставление только необходимого интерфейса для взаимодействия с объектом.',
+                    tags: ['ООП', 'программирование'],
+                    knownCount: 2,
+                    lastSeen: new Date().toISOString()
+                },
+                {
+                    id: generateId(),
+                    front: 'Полиморфизм',
+                    back: 'Возможность объектов с одинаковой спецификацией иметь различную реализацию.',
+                    tags: ['ООП', 'программирование'],
+                    knownCount: 1,
+                    lastSeen: new Date().toISOString()
+                },
+                {
+                    id: generateId(),
+                    front: 'Наследование',
+                    back: 'Механизм, позволяющий создавать новый класс на основе существующего, с возможностью переопределения и добавления функциональности.',
+                    tags: ['ООП', 'программирование'],
+                    knownCount: 0,
+                    lastSeen: new Date().toISOString()
+                },
+                {
+                    id: generateId(),
+                    front: 'Массив',
+                    back: 'Структура данных, хранящая набор элементов одного типа, доступ к которым осуществляется по индексу.',
+                    tags: ['структуры данных', 'программирование'],
+                    knownCount: 3,
+                    lastSeen: new Date().toISOString()
+                }
+            ];
+            saveData();
+        }
+
+        function saveData() {
+            const data = {
+                version: state.version,
+                cards: state.cards,
+                darkTheme: state.darkTheme
+            };
+            localStorage.setItem('flashcards-data', JSON.stringify(data));
+        }
+
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        function updateStats() {
+            const totalCards = state.cards.length;
+            const learnedCards = state.cards.filter(card => card.knownCount >= 3).length;
+            const progress = totalCards > 0 ? Math.round((learnedCards / totalCards) * 100) : 0;
+            
+            document.getElementById('total-cards').textContent = totalCards;
+            document.getElementById('learned-cards').textContent = learnedCards;
+            document.getElementById('progress').textContent = progress;
+        }
+
+        function updateTags() {
+            const tagsContainer = document.getElementById('tags-list');
+            tagsContainer.innerHTML = '';
+            
+            const allTags = new Set();
+            state.cards.forEach(card => {
+                card.tags.forEach(tag => allTags.add(tag));
+            });
+            
+            allTags.forEach(tag => {
+                const tagElement = document.createElement('span');
+                tagElement.className = 'tag';
+                if (state.selectedTags.includes(tag)) {
+                    tagElement.classList.add('selected');
+                }
+                tagElement.textContent = tag;
+                tagElement.addEventListener('click', () => toggleTag(tag));
+                tagsContainer.appendChild(tagElement);
+            });
+        }
+
+        function toggleTag(tag) {
+            const index = state.selectedTags.indexOf(tag);
+            if (index === -1) {
+                state.selectedTags.push(tag);
+            } else {
+                state.selectedTags.splice(index, 1);
+            }
+            updateTags();
+            showNextCard();
+        }
+
+        function showNextCard() {
+            let availableCards = state.cards;
+            
+            if (state.selectedTags.length > 0) {
+                availableCards = state.cards.filter(card => 
+                    card.tags.some(tag => state.selectedTags.includes(tag))
+                );
+            }
+            
+            const searchQuery = document.querySelector('.search-box').value.toLowerCase();
+            if (searchQuery) {
+                availableCards = availableCards.filter(card => 
+                    card.front.toLowerCase().includes(searchQuery) || 
+                    card.back.toLowerCase().includes(searchQuery) ||
+                    card.tags.some(tag => tag.toLowerCase().includes(searchQuery))
+                );
+            }
+            
+            if (availableCards.length === 0) {
+                document.querySelector('.flashcard-term').textContent = 'Нет карточек';
+                document.querySelector('.flashcard-definition').textContent = 'Попробуйте изменить фильтры или добавить новые карточки';
+                document.querySelector('.show-answer').style.display = 'none';
+                document.querySelector('.feedback-buttons').style.display = 'none';
+                document.querySelector('.show-question').style.display = 'none';
+                return;
+            }
+            
+            const weights = availableCards.map(card => 5 - Math.min(card.knownCount, 4));
+            const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+            let random = Math.random() * totalWeight;
+            
+            let selectedIndex = 0;
+            for (let i = 0; i < weights.length; i++) {
+                random -= weights[i];
+                if (random <= 0) {
+                    selectedIndex = i;
+                    break;
+                }
+            }
+            
+            state.currentCardIndex = state.cards.indexOf(availableCards[selectedIndex]);
+            renderCard();
+        }
+
+        function renderCard() {
+            const card = state.cards[state.currentCardIndex];
+            if (!card) return;
+            
+            document.querySelector('.flashcard-term').textContent = card.front;
+            document.querySelector('.flashcard-definition').textContent = card.back;
+            document.querySelector('.show-answer').style.display = 'block';
+            document.querySelector('.feedback-buttons').style.display = 'flex';
+            document.querySelector('.show-question').style.display = 'none';
+            
+            document.querySelector('.flashcard').classList.remove('flipped');
+        }
+
+        function markAsKnown() {
+            if (state.currentCardIndex >= 0 && state.currentCardIndex < state.cards.length) {
+                state.cards[state.currentCardIndex].knownCount++;
+                state.cards[state.currentCardIndex].lastSeen = new Date().toISOString();
+                saveData();
+                updateStats();
+                playSound('correct');
+                showNextCard();
+            }
+        }
+
+        function markAsUnknown() {
+            if (state.currentCardIndex >= 0 && state.currentCardIndex < state.cards.length) {
+                state.cards[state.currentCardIndex].knownCount = Math.max(0, state.cards[state.currentCardIndex].knownCount - 1);
+                state.cards[state.currentCardIndex].lastSeen = new Date().toISOString();
+                saveData();
+                updateStats();
+                playSound('incorrect');
+                showNextCard();
+            }
+        }
+
+        function addCard(term, definition, tags) {
+            const newCard = {
+                id: generateId(),
+                front: term,
+                back: definition,
+                tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+                knownCount: 0,
+                lastSeen: null
+            };
+            
+            state.cards.push(newCard);
+            saveData();
+            updateStats();
+            updateTags();
+            showNextCard();
+            playSound('add');
+        }
+
+        function editCard(id, term, definition, tags) {
+            const cardIndex = state.cards.findIndex(card => card.id === id);
+            if (cardIndex !== -1) {
+                state.cards[cardIndex].front = term;
+                state.cards[cardIndex].back = definition;
+                state.cards[cardIndex].tags = tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+                saveData();
+                updateTags();
+                if (state.currentCardIndex === cardIndex) {
+                    renderCard();
+                }
+            }
+        }
+
+        function deleteCard(id) {
+            const cardIndex = state.cards.findIndex(card => card.id === id);
+            if (cardIndex !== -1) {
+                state.cards.splice(cardIndex, 1);
+                saveData();
+                updateStats();
+                updateTags();
+                showNextCard();
+            }
+        }
+
+        function exportData() {
+            const data = {
+                version: state.version,
+                cards: state.cards
+            };
+            document.getElementById('export-data').value = JSON.stringify(data, null, 2);
+            document.getElementById('export-content').style.display = 'block';
+            document.getElementById('import-content').style.display = 'none';
+            document.getElementById('ie-modal-title').textContent = 'Экспорт данных';
+            document.getElementById('import-export-modal').style.display = 'flex';
+        }
+
+        function importData() {
+            document.getElementById('export-content').style.display = 'none';
+            document.getElementById('import-content').style.display = 'block';
+            document.getElementById('ie-modal-title').textContent = 'Импорт данных';
+            document.getElementById('import-export-modal').style.display = 'flex';
+        }
+
+        function processImport() {
+            try {
+                const importData = JSON.parse(document.getElementById('import-data').value);
+                if (importData.version && importData.cards) {
+                    state.cards = importData.cards;
+                    saveData();
+                    updateStats();
+                    updateTags();
+                    showNextCard();
+                    document.getElementById('import-export-modal').style.display = 'none';
+                    playSound('success');
+                } else {
+                    alert('Некорректный формат данных');
+                }
+            } catch (e) {
+                alert('Ошибка при импорте данных: ' + e.message);
+            }
+        }
+
+        function toggleTheme() {
+            state.darkTheme = !state.darkTheme;
+            if (state.darkTheme) {
+                document.body.classList.add('dark-theme');
+            } else {
+                document.body.classList.remove('dark-theme');
+            }
+            saveData();
+            playSound('toggle');
+        }
+
+        function playSound(type) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            switch(type) {
+                case 'correct':
+                    oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    break;
+                case 'incorrect':
+                    oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    break;
+                case 'flip':
+                    oscillator.frequency.setValueAtTime(392, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    break;
+                case 'add':
+                    oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    break;
+                case 'toggle':
+                    oscillator.frequency.setValueAtTime(349.23, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    break;
+                case 'success':
+                    oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime);
+                    oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1);
+                    oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2);
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    break;
+                case 'start':
+                    oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    break;
+            }
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+
+        function setupEventListeners() {
+            document.querySelector('.show-answer').addEventListener('click', function() {
+                document.querySelector('.flashcard').classList.add('flipped');
+                playSound('flip');
+            });
+            
+            document.querySelector('.show-question').addEventListener('click', function() {
+                document.querySelector('.flashcard').classList.remove('flipped');
+                playSound('flip');
+            });
+            
+            document.querySelector('.know').addEventListener('click', markAsKnown);
+            document.querySelector('.dont-know').addEventListener('click', markAsUnknown);
+            
+            document.querySelector('.add-card').addEventListener('click', function() {
+                document.getElementById('modal-title').textContent = 'Добавить карточку';
+                document.getElementById('card-term').value = '';
+                document.getElementById('card-definition').value = '';
+                document.getElementById('card-tags').value = '';
+                document.getElementById('card-modal').style.display = 'flex';
+            });
+            
+            document.querySelector('.export').addEventListener('click', exportData);
+            document.querySelector('.import').addEventListener('click', importData);
+            
+            document.querySelector('.theme-toggle').addEventListener('click', toggleTheme);
+            
+            document.querySelector('.search-box').addEventListener('input', showNextCard);
+            
+            document.getElementById('card-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const term = document.getElementById('card-term').value;
+                const definition = document.getElementById('card-definition').value;
+                const tags = document.getElementById('card-tags').value;
+                
+                addCard(term, definition, tags);
+                document.getElementById('card-modal').style.display = 'none';
+            });
+            
+            document.getElementById('import-button').addEventListener('click', processImport);
+            
+            document.querySelectorAll('.close-button, .cancel-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    document.getElementById('card-modal').style.display = 'none';
+                    document.getElementById('import-export-modal').style.display = 'none';
+                });
+            });
+            
+            window.addEventListener('click', function(e) {
+                if (e.target === document.getElementById('card-modal')) {
+                    document.getElementById('card-modal').style.display = 'none';
+                }
+                if (e.target === document.getElementById('import-export-modal')) {
+                    document.getElementById('import-export-modal').style.display = 'none';
+                }
+            });
+        }
+
+        function render() {
+            updateTags();
+            showNextCard();
+        }
+    </script>
+</body>
+</html>
